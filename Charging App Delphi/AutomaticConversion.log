@@ -1,0 +1,3 @@
+BMSMonitor.lpi Note: Added defines -dBorland -dVer150 -dDelphi7 -dCompiler6_Up -dPUREPASCAL in custom options
+ Progress: Found all unit files
+ Fatal: Conversion Aborted.
