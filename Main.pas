@@ -563,7 +563,12 @@ procedure TBMSMonForm.FormCreate(Sender: TObject);
 var
   i,j, col, row, id : integer;
 begin
-  CanChannel1 := TCanChannelEx.Create(Self);
+  try
+    CanChannel1 := TCanChannelEx.Create(Self);
+  except
+     ShowMessage('Error initialisiting, are KVASER drivers installed?');
+     Application.Terminate();
+  end;
   CanChannel1.Channel := 0;
   RequestCharging := false;
   VoltageGrid.Selection:= NoSelection;
@@ -628,6 +633,7 @@ begin
   end;
          }
 
+       Timer1.Enabled := true;
 end;
 
 procedure TBMSMonForm.FormShow(Sender: TObject);

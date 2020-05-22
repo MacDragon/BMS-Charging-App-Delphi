@@ -375,7 +375,7 @@ object BMSMonForm: TBMSMonForm
     object ChargeVoltage: TLabel
       Left = 106
       Top = 81
-      Width = 15
+      Width = 4
       Height = 13
       Caption = '-'
     end
@@ -594,6 +594,7 @@ object BMSMonForm: TBMSMonForm
     OnClick = StopButtonClick
   end
   object Timer1: TTimer
+    Enabled = False
     OnTimer = Timer1Timer
     Left = 256
     Top = 32
