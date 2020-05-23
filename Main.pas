@@ -649,6 +649,7 @@ begin
     if not Active then begin
       Bitrate := canBITRATE_1M;
       Channel := CanDevices.ItemIndex;
+      Options := [ccNotExclusive];  // allows eg canking to also run.
       Open;
     //  SetHardwareFilters($20, canFILTER_SET_CODE_STD);
     //  SetHardwareFilters($FE, canFILTER_SET_MASK_STD);
