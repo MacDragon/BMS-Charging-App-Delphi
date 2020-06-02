@@ -445,8 +445,10 @@ var
 begin
   SetLength(p, 64);
   CanDevices.Items.clear;
-  for i := 0 to CanChannel1.ChannelCount - 1 do begin
-     CanDevices.Items.Add(CanChannel1.ChannelNames[i]);
+  for i := 0 to CanChannel1.ChannelCount - 1 do
+  begin
+    if ansipos('Virtual', CanChannel1.ChannelNames[i]) = 0 then  // don't populate virtual channels.
+      CanDevices.Items.Add(CanChannel1.ChannelNames[i]);
   end;
   if CanDevices.Items.Count > 0 then
     CanDevices.ItemIndex := 0;
