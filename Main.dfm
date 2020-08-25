@@ -2,7 +2,7 @@ object BMSMonForm: TBMSMonForm
   Left = 0
   Top = 0
   Caption = 'BMSMonForm'
-  ClientHeight = 739
+  ClientHeight = 768
   ClientWidth = 1139
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -151,7 +151,7 @@ object BMSMonForm: TBMSMonForm
     Left = 99
     Top = 631
     Width = 481
-    Height = 105
+    Height = 130
     Caption = 'Balancing'
     ItemIndex = 0
     Items.Strings = (
@@ -162,7 +162,8 @@ object BMSMonForm: TBMSMonForm
         'Delta, no discharge is done.'
       
         'Discharge all cells whose voltage is above '#39'average cell voltage' +
-        ' + delta'#39)
+        ' + delta'#39
+      'Discharge all cells to 3.8V for storage ( Atmel currently )')
     TabOrder = 4
     OnClick = BalancingModeClick
   end
