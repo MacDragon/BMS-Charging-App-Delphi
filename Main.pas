@@ -172,7 +172,7 @@ uses DateUtils, canlib;
 {$endif}
 
 const
-  maxchargecurrent = 120;
+  maxchargecurrent = 60;
   maxfanspeed = 255;
 
   cellcount = 144;
@@ -190,9 +190,10 @@ const
 
   CANBMSStatusID = 7;
 
-  CANIVTID = 1313;
+  CANIVTID = $521;
 
-  CANIID = 1553;
+  CANIID =  $611;
+  CANIID2 = $648;
 
   CANRequestID = 1900;
 
@@ -335,7 +336,7 @@ begin
 
 
         msg[2] := numericUpDownMinVoltage shr 8; // upper byte. 31000 default
-        msg[3] := byte(numericUpDownMinVoltage); // lower byte
+        msg[3] := byte(numericUpDownMinVoltage); // lower bfyte
 
         msg[4] := numericUpDownChargerDis shr 8; // upper byte. auto disable voltage? 41900 default
         msg[5] := byte(numericUpDownChargerDis);  // lower byte
@@ -894,6 +895,13 @@ begin
           end;
 
           CANIID : //   read_curr_real()
+          begin
+            ChargeCurrent.Caption := IntToStr(Get16BitBE(msg,6) div 100);
+            //Added output voltage actual to this function. Function name misleading
+            ChargeVoltage.Caption := IntToStr(Get16BitBE(msg,4) div 5);
+          end;
+
+          CANIID2 : //   read_curr_real()
           begin
             ChargeCurrent.Caption := IntToStr(Get16BitBE(msg,6) div 100);
             //Added output voltage actual to this function. Function name misleading

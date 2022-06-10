@@ -560,7 +560,7 @@ object BMSMonForm: TBMSMonForm
     Top = 599
     Width = 146
     Height = 21
-    Max = 120
+    Max = 60
     PageSize = 0
     TabOrder = 15
     OnChange = ChargeCurrentSliderChange
