@@ -1,48 +1,34 @@
 ﻿unit Main;
-
 {*
-
 Add coulomb counting?
-
 keep track of how much charged.
-
 BMS keep track of how much discharged, report value to charging app?
-
 *}
-
 
 {$IFDEF FPC}
   {$MODE Delphi}
 {$ENDIF}
-
 {$define liveupdate}
-
 interface
-
 uses
 //  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
 //  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.Grids, Vcl.StdCtrls, canchanex,
 //  Vcl.ExtCtrls;
-
   Windows, Messages, SysUtils, Variants, Classes, Graphics,
   Controls, Forms, Dialogs, Grids, StdCtrls, canchanex,
   ExtCtrls;
-
 type
-
   Cell = record
     Voltage : Real;
     discharging : Boolean;
     received : Boolean;
     max, min : Boolean;
   end;
-
   Temp = record
     Temperature : Real;
     received : Boolean;
     max, min : Boolean;
   end;
-
   TBMSMonForm = class(TForm)
     VoltageGrid: TStringGrid;
     TemperatureGrid: TStringGrid;
@@ -142,7 +128,7 @@ type
     RequestCharging, timeout : Bool;
     Values : array[0..7] of String[20];
     AccCells, AccCellsDisplay: array[0..143] of Cell;
-    Temps, TempsDisplay : array[0..59] of Temp;
+    Temps, TempsDisplay : array[0..71] of Temp; //023
     PowerVal, PECVal, PECAvgVal : Integer;
     maxV, minV, maxT, minT : Real;
     CurrentVal, ChargeCurrentVal,ChargeVoltageVal : Real;
@@ -153,83 +139,60 @@ type
     procedure ZeroCells;
    // Discharging array
 
-
   public
     { Public declarations }
     procedure PopulateList;
   end;
-
 var
   BMSMonForm: TBMSMonForm;
-
 implementation
-
 uses DateUtils, canlib;
 {$ifdef FPC}
 {$R *.lfm}
 {$else}
 {$R *.dfm}
 {$endif}
-
 const
   maxchargecurrent = 60;
   maxfanspeed = 255;
-
   cellcount = 144;
-  tempcount = 60;
-
-
+  //tempcount = 60;
+  tempcount = 72; //023
   maxtemp = 45;
   lowtemp = 20;
   mintemp = 0;
-
   maxvoltage = 4.2;
   minvoltage = 3.0;
-
   CANPowerID = 15;
-
   CANBMSStatusID = 7;
-
   CANIVTID = $521;
-
   CANIID =  $611;
   CANIID2 = $648;
-
   CANRequestID = 1900;
-
   CANBMSErrorStateID = 1901;
-
   CANCommandID = 1902;
-
   CANDischargeID = 1909;
   CANCellID = 1912;
-  CANTempID = 1948;
-
+  CANTempID = 1960;
   ErrHiRGB = $FF6EC7;
   ErrLowRGB = $FFFF00;
-
   NoSelection: TGridRect = (Left: 0; Top: -1; Right: 0; Bottom: -1);
-
   function IsBitSet(const AValueToCheck, ABitIndex: Integer): Boolean;
 begin
   Result := AValueToCheck and (1 shl ABitIndex) <> 0;
 end;
 
-
 function Get32BitBE(var msg: array of byte; start : byte ) : Long;
 begin
    result := msg[start] shl 24 + msg[start+1] shl 16 + msg[start+2] shl 8 + msg[start+3];
 end;
-
 function Get16BitBE(var msg: array of byte; start : byte ) : Long;
 begin
    result := msg[start] shl 8 + msg[start+1];
 end;
 
-
 procedure TBMSMonForm.CanDropped;
 begin
-
   with CanChannel1 do
   begin
     try
@@ -244,9 +207,7 @@ begin
       Close;
     end;
   end;
-
 end;
-
 procedure TBMSMonForm.ZeroCells;
 var
   i : integer;
@@ -258,19 +219,16 @@ begin
     AccCellsDisplay[i].Voltage := 0;
     AccCellsDisplay[i].received := false;
   end;
-
   for i := 0 to TempCount-1 do
   begin
     TempsDisplay[i].Temperature := 0;
     TempsDisplay[i].received := false;
   end;
 end;
-
 procedure TBMSMonForm.CanDevicesChange(Sender: TObject);
 begin
    CanChannel1.Channel := CanDevices.ItemIndex;
 end;
-
 procedure TBMSMonForm.SendCommand;
 var
   msg: array[0..7] of byte;
@@ -291,7 +249,6 @@ begin
       msg[5] := 0; // unused
       msg[2] := 1; // core
       msg[2] := msg[2] + 8; // debug always wanted, needed on to see voltages
-
       if RequestCharging then
       begin
         if BalancingMode.ItemIndex >0 then
@@ -305,7 +262,6 @@ begin
         StopButton.Enabled := true;
         {$endif}
 
-
         RandomFill.Enabled := false;
       end
       else
@@ -313,7 +269,6 @@ begin
         Charge.Caption := 'Charge';
         msg[2] := msg[2] + 16; // datalog always on to keep sd card log. with app bits 5,6,7 not used.
       end;
-
       case BalancingMode.ItemIndex of
              0 : msg[3] := 0;
              1 : msg[3] := 0;
@@ -322,40 +277,29 @@ begin
              4 : msg[3] := 3;
       end;
 
-
       msg[7] := FanSpeedSlider.Position;  // fan speed 128 max  anything else off?
-
       try
         Check(Write(CANCommandID,msg,8,0), 'Write failed');
-
         // next two sections marked deprecated on original form and non editable,
         // but values still sent.
-
         msg[0] := numericUpDownMaxVoltage shr 8; // upper byte. 42000 default - 16 bit value
         msg[1] := byte(numericUpDownMaxVoltage);    // lower byte
 
-
         msg[2] := numericUpDownMinVoltage shr 8; // upper byte. 31000 default
         msg[3] := byte(numericUpDownMinVoltage); // lower bfyte
-
         msg[4] := numericUpDownChargerDis shr 8; // upper byte. auto disable voltage? 41900 default
         msg[5] := byte(numericUpDownChargerDis);  // lower byte
-
         msg[6] := numericUpDownChargerEn shr 8;   // upper byte. enable charging voltage? 41800 default.
         msg[7] := byte(numericUpDownChargerEn);
-
         Check(Write(CANCommandID+1,msg,8,0), 'Write failed');
-
         msg[0] := numericUpDownDelta shr 8; // upper byte. Delta value. 100 default.
         msg[1] := byte(numericUpDownDelta); // lower byte.
-
         msg[2] := 0;      // padding.
         msg[3] := 0;
         msg[4] := 0;
         msg[5] := 0;
         msg[6] := 0;
         msg[7] := 0;
-
         Check(Write(CANCommandID+2,msg,8,0), 'Write failed');
         StatusMsg.Lines.Add('CanMsgSend status charging: '+ booltostr(RequestCharging, true));
       Except
@@ -365,7 +309,6 @@ begin
     end;
   end;
 end;
-
 procedure TBMSMonForm.ChargeClick(Sender: TObject);
 begin
   if CanChannel1.Active then
@@ -378,15 +321,12 @@ begin
       if not timeout then
         RequestCharging := true;
     end;
-
     {$else}
     RequestCharging := true;
     {$endif}
-
     SendCommand;
   end;
 end;
-
 procedure TBMSMonForm.ChargeCurrentEditChange(Sender: TObject);
 var
   val : integer;
@@ -402,7 +342,6 @@ begin
     ChargeCurrentEdit.Text := IntToStr(maxchargecurrent);
   ChargeCurrentSlider.Position := StrToInt(ChargeCurrentEdit.Text);
 end;
-
 procedure TBMSMonForm.ChargeCurrentSliderChange(Sender: TObject);
 begin
     ChargeCurrentEdit.Text := IntToStr(ChargeCurrentSlider.Position);
@@ -410,12 +349,10 @@ begin
     SendCommand;
     {$endif}
 end;
-
 procedure TBMSMonForm.DebugOnClick(Sender: TObject);
 begin
   SendCommand;
 end;
-
 procedure TBMSMonForm.FanSpeedEditChange(Sender: TObject);
 var
   val : integer;
@@ -430,7 +367,6 @@ begin
   else if StrToInt(FanSpeedEdit.Text) > maxfanspeed then FanSpeedEdit.Text := IntToStr(maxfanspeed);
   FanSpeedSlider.Position := StrToInt(FanSpeedEdit.Text);
 end;
-
 procedure TBMSMonForm.FanSpeedSliderChange(Sender: TObject);
 begin
   FanSpeedEdit.Text := IntToStr(FanSpeedSlider.Position);
@@ -438,7 +374,6 @@ begin
   SendCommand;
   {$endif}
 end;
-
 // ask can drivers for list of available devices
 procedure TBMSMonForm.PopulateList;
 var
@@ -455,25 +390,21 @@ begin
   if CanDevices.Items.Count > 0 then
     CanDevices.ItemIndex := 0;
 end;
-
 procedure TBMSMonForm.RandomFillClick(Sender: TObject);
 var
   i, j, col, row, id : integer;
   temp : Word;
-
 begin
   for i := 0 to CellCount-1 do
   begin
     AccCells[i].Voltage := 0;
     AccCells[i].received := true;
   end;
-
   for i := 0 to TempCount-1 do
   begin
     Temps[i].Temperature := 0;
     Temps[i].received := true;
   end;
-
   for id := CANDischargeID+1 to CANDischargeID+1 do //CANDischargeID+2 do
   begin
     row := (id-CANDischargeID)*4;
@@ -485,8 +416,8 @@ begin
     // CANDischargeII Msg[4][5] = row 2
     // CANDischargeII Msg[6][7] = row 3
     temp := 1+2+4+8+16+32+64+256+512+1024;
-    for col := 0 to 11 do // columns
-      for j := 0 to 3 do // rows
+    for col := 0 to 18 do // columns
+      for j := 0 to 7 do // rows
       begin
         if IsBitSet(temp,col) then
  //       if IsBitSet(Get16BitBE(msg,j*2),col) then
@@ -495,44 +426,50 @@ begin
           AccCells[col+(row+j)*12].discharging := false;
       end;
   end;
-
-  for id := CANCellID to CANCellID+(12*3)-1 do
+  for row := 0 to 7 do
   begin
-
-    col := trunc((id-CANCellID)/3); // working down rows then across
-    row := trunc((id-CANCellID)mod 3)*4;
-    StatusMsg.Lines.Add('Id '+inttostr(id)+' row: '+inttostr(row)+' col: '+inttostr(col));
-
-    AccCells[col+row*12].Voltage := 2.8 + Random*1.6;
-    AccCells[col+row*12].received := true;
-    AccCells[col+(row+1)*12].Voltage := 2.8 + Random*1.6;
-    AccCells[col+(row+1)*12].received := true;
-    AccCells[col+(row+2)*12].Voltage := 2.8 + Random*1.6;
-    AccCells[col+(row+2)*12].received := true;
-    AccCells[col+(row+3)*12].Voltage := 2.8 + Random*1.6;
-    AccCells[col+(row+3)*12].received := true;
-  end;
-
-  for id := CANTempID to CANTempID+(12*2)-1 do
-  begin
-    col := trunc((id-CANTempID) / 2 ); //  set starting cell to work down from
-    row := ((id-CANTempID) mod 2 )*4; // correct
-
-
-    Temps[col + row*12].Temperature := -5 + Random*55;
-    Temps[col + row*12].received := true;
-    if row < 4 then
+    col := 0;
+    while col < 18 do
     begin
-      Temps[col + (row+1)*12].Temperature := -5 + Random*55;
-      Temps[col + (row+1)*12].received := true;
-      Temps[col + (row+2)*12].Temperature := -5 + Random*55;
-      Temps[col + (row+2)*12].received := true;
-      Temps[col + (row+3)*12].Temperature := -5 + Random*55;
-      Temps[col + (row+3)*12].received := true;
+    //StatusMsg.Lines.Add('Id '+inttostr(id)+' row: '+inttostr(row)+' col: '+inttostr(col));
+      AccCells[col+row*18].Voltage := 2.8 + Random*1.6;
+      AccCells[col+row*18].received := true;
+      AccCells[col+1+row*18].Voltage := 2.8 + Random*1.6;
+      AccCells[col+1+row*18].received := true;
+      AccCells[col+2+row*18].Voltage := 2.8 + Random*1.6;
+      AccCells[col+2+row*18].received := true;
+      inc(col, 3);
     end;
   end;
-end;
+  for row := 0 to 7 do
+  begin
+    col := 0;
+    while col < 9 do
+    begin
 
+      Temps[col + row*9].Temperature := 0 + Random*55;//col + row*8;
+      Temps[col + row*9].received := true;
+      Temps[col+1 + row*9].Temperature := 0 + Random*55;//col + row*8;
+      Temps[col+1 + row*9].received := true;
+      Temps[col+2 + row*9].Temperature := 0 + Random*55;//col + row*8;
+      Temps[col+2 + row*9].received := true;
+
+
+    {
+    //StatusMsg.Lines.Add('Id '+inttostr(id)+' row: '+inttostr(row)+' col: '+inttostr(col));
+      Temps[col + row*9].Temperature := col + row*9;
+      Temps[col + row*9].received := true;
+      Temps[col+1 + row*9].Temperature := col + row*9;
+      Temps[col+1 + row*9].received := true;
+      Temps[col+2 + row*9].Temperature := col + row*9;
+      Temps[col+2 + row*9].received := true;
+      }
+      inc(col, 3);
+    end;
+    //Modified for testing
+    //Temps[col + row*8].Temperature := -5 + Random*55;
+  end;
+end;
 procedure TBMSMonForm.StopButtonClick(Sender: TObject);
 begin
   if CanChannel1.Active then
@@ -556,13 +493,11 @@ begin
     SendCommand;
   end;
 end;
-
 procedure TBMSMonForm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   if RequestCharging = true then
     ChargeClick(Self); // ensure try to stop charging if close form.
 end;
-
 procedure TBMSMonForm.FormCreate(Sender: TObject);
 var
   i,j, col, row, id : integer;
@@ -577,38 +512,32 @@ begin
   RequestCharging := false;
   VoltageGrid.Selection:= NoSelection;
   TemperatureGrid.Selection:= NoSelection;
-  VoltageGrid.Cells[0,0] := 'Voltage(v)';
+  VoltageGrid.Cells[0,0] := 'Volts(v)';
   ChargeCurrentSlider.Max := maxchargecurrent;
   ChargeCurrentSlider.Position := maxchargecurrent;
   FanSpeedSlider.Max := maxfanspeed;
   FanSpeedSlider.Position := maxfanspeed;
-
   {$ifdef liveupdate}
   StopButton.Hide;
   {$endif}
-
   for i := 1 to VoltageGrid.ColCount-1 do
   begin
     VoltageGrid.Cells[i,0] :=  'C' + inttostr(i);
   end;
-
   for i := 1 to VoltageGrid.RowCount-1 do
-    VoltageGrid.Cells[0,i] :=  'R' + inttostr(i);
-
+    VoltageGrid.Cells[0,i] :=  'S' + inttostr(i);
   for i := 1 to TemperatureGrid.ColCount-1 do
   begin
     TemperatureGrid.Cells[i,0] :=  'C' + inttostr(i);
   end;
-
   for i := 1 to TemperatureGrid.RowCount-1 do
-    TemperatureGrid.Cells[0,i] :=  'R' + inttostr(i);
-
+    TemperatureGrid.Cells[0,i] :=  'S' + inttostr(i);
   {$ifdef randomfill}
   RandomFillClick(Self);
   {$endif}
 
+  TemperatureGrid.ColWidths[0] := 86;
 {
-
     for i := CANCellID to CANCellID+(12*3)-1 do //read cell voltage messages /
     begin
       col := trunc((i-CANCellID)/3)*12;
@@ -621,12 +550,10 @@ begin
         AccCells[col+ 3+row].Voltage := (i);
       end;
     end;
-
   for i := CANTempID to CANTempID+(12*2)-1 do //read cell voltage messages /
   begin
     col := (trunc((i-CANTempID) / 2 )*12); //  set starting cell to work down from
     row := ((i-CANTempID) mod 2 )*4;
-
     Temps[col+ 0 + row].Temperature := i;
     if row < 5 then
     begin
@@ -636,15 +563,12 @@ begin
     end;
   end;
          }
-
        Timer1.Enabled := true;
 end;
-
 procedure TBMSMonForm.FormShow(Sender: TObject);
 begin
   PopulateList;
 end;
-
 procedure TBMSMonForm.goOnBusClick(Sender: TObject);
 var
   formattedDateTime : String;
@@ -669,7 +593,6 @@ begin
       DateTimeToString(formattedDateTime, 'hh:mm:ss', SysUtils.Now);
       timeout := true;
       SendCommand;
-
     end
     else begin
       TimeReceived.Caption := '-';
@@ -683,7 +606,6 @@ begin
     end;
   end;
 end;
-
 function RGBColour(Val, Low, High : real; inv : boolean ) : Long;
 var
   valratio, r, g, b : byte;
@@ -700,16 +622,13 @@ begin
     HighRGB := ErrLowRGB;
     LowRGB := ErrHiRGB;
   end;
-
   if Val < Low then
     Exit(LowRGB)
   else if Val > High then
    Exit(HighRGB);
-
   valr := 1/(high-low)*(val-low)*2;
   valratio := (round(frac(valr)*$FF));
   B := 0;
-
   case Trunc(valr) of
     0: begin
         R := $FF;
@@ -720,7 +639,6 @@ begin
         G := $FF;
       end;
   end;
-
   if Inv then
   begin
     B := R;
@@ -728,10 +646,8 @@ begin
     G := B;
     B := 0;
   end;
-
   RGBColour := rgb(R,G,B);
 end;
-
 procedure TBMSMonForm.VoltageGridDrawCell(Sender: TObject; ACol, ARow: Integer;
   Rect: TRect; State: TGridDrawState);
 var
@@ -743,8 +659,7 @@ begin
   begin
     if (ACol > 0) and (ARow > 0) then
     begin
-        cell := (ARow-1)*12+(ACol-1);
-
+        cell := (ARow-1)*18+(ACol-1);
         if Cells[Acol,Arow] <> '' then
         begin
           cellvoltage := AccCellsDisplay[cell].Voltage;
@@ -770,7 +685,6 @@ begin
     // Make the rectangle where the text will be displayed a bit smaller than the cell
     // so the text is not "glued" to the grid lines
         InflateRect(RectForText, -2, -8);
-
         DrawText (Canvas.Handle,
             PChar(Cells[ACol, ARow]),
             Length(Cells[ACol, ARow]),
@@ -778,7 +692,6 @@ begin
     end
   end
 end;
-
 
 procedure TBMSMonForm.TemperatureGridDrawCell(Sender: TObject; ACol, ARow: Integer;
   Rect: TRect; State: TGridDrawState);
@@ -791,10 +704,11 @@ begin
   begin
     if (ACol > 0) and (ARow > 0) then
     begin
-        cell := (ARow-1)*12+(ACol-1);
+        //cell := (ARow-1)*12+(ACol-1);
+        cell := (ARow-1)*9+(ACol-1); //023
         if Cells[Acol,Arow] <> '' then
         begin
-          temp :=  TempsDisplay[cell].Temperature;
+          temp := TempsDisplay[cell].Temperature;
           if ( temp > mintemp ) and ( temp < lowtemp ) then
             temp := lowtemp;
           Canvas.Brush.Color := RGBColour(temp, lowtemp, maxtemp, true);
@@ -818,7 +732,6 @@ begin
     // Make the rectangle where the text will be displayed a bit smaller than the cell
     // so the text is not "glued" to the grid lines
         InflateRect(RectForText, -2, -8);
-
         DrawText (Canvas.Handle,
             PChar(Cells[ACol, ARow]),
             Length(Cells[ACol, ARow]),
@@ -827,21 +740,17 @@ begin
   end
 end;
 
-
 procedure TBMSMonForm.Timer1Timer(Sender: TObject);
 begin
   Update;// call update request
 end;
-
 // Check if the bit at ABitIndex position is 1 (true) or 0 (false)
-
 procedure TBMSMonForm.BalancingModeClick(Sender: TObject);
 begin
     {$ifdef liveupdate}
     SendCommand;
     {$endif}
 end;
-
 procedure TBMSMonForm.CanChannel1CanRx(Sender: TObject);
 var
   dlc, flag, time: cardinal;
@@ -867,66 +776,54 @@ begin
           begin
             StatusMsg.Lines.add('test');
           end;
-
           //             canStatus = Canlib.canReadSpecific(canHandle, id, rxData, out dlc, out flags, out time);
          //   pec = (uint)(((uint)rxData[0] << 24) | ((uint)rxData[1] << 16) | ((uint)rxData[2] << 8) | ((uint)rxData[3] << 0));
          //   pec_avg = (uint)(((uint)rxData[4] << 24) | ((uint)rxData[5] << 16) | ((uint)rxData[6] << 8) | ((uint)rxData[7] << 0));
-
           CANBMSStatusID+3 :  // PEC
           begin
             PECVal := Get32BitBE(msg,0);
             PECAvgVal := Get32BitBE(msg,4);
           end;
-
           CANBMSStatusID+7 :
           begin
             uptime.Caption := IntToStr(Get32BitBE(msg,0));
           end;
-
           CANBMSStatusID+8 : // power
           begin
             PowerVal := Get32BitBE(msg,0);
           //  CurrentVal := (Int16)((rxData[4] << 8) | (rxData[5] << 0));
           end;
-
           CANIVTID :  // current from ivt
           begin
             CurrentVal := Get32BitBE(msg,2);// / 1000;
           end;
-
           CANIID : //   read_curr_real()
           begin
             ChargeCurrent.Caption := IntToStr(Get16BitBE(msg,6) div 100);
             //Added output voltage actual to this function. Function name misleading
             ChargeVoltage.Caption := IntToStr(Get16BitBE(msg,4) div 5);
           end;
-
           CANIID2 : //   read_curr_real()
           begin
             ChargeCurrent.Caption := IntToStr(Get16BitBE(msg,6) div 100);
             //Added output voltage actual to this function. Function name misleading
             ChargeVoltage.Caption := IntToStr(Get16BitBE(msg,4) div 5);
           end;
-
           CANBMSStatusID :  //    private void read_time()
           begin
       //      hour = IntToStr(Get32BitBE(msg,0));    // why sending twice?
       //      minute = IntToStr(Get32BitBE(msg,4));
           end;
-
           CANBMSStatusID+1 :
           begin
       //      second = IntToStr(Get32BitBE(msg,0));
       //      labelTime.Text = "Uptime(formatted): " + hour.ToString() + ":" + minute.ToString() + ":" + second.ToString();
             Uptime.Caption := IntToStr(Get32BitBE(msg,4));  // is updating.
           end;
-
           CANBMSStatusID+2 : // private void read_state()
           begin
             lastseen := SysUtils.Now;
-
             SafeState.Checked := Boolean(msg[0]);
-
             if SafeState.Checked = true then
             begin
               case msg[1] of
@@ -944,13 +841,10 @@ begin
               end;
               SafeStateReason.Caption := str;
             end;
-
             AIRState.Caption := IntToStr(msg[2]);
             PREState.Caption := IntToStr(msg[3]);
-
             i := msg[4];
             str := '';
-
             if IsBitSet(i, 3) = false then str := str + ' Nodebug';
           //  if IsBitSet(i, 3) then str := str + ' log';
             if msg[0] = 0 then
@@ -966,9 +860,7 @@ begin
             begin
               Status.Caption := 'Not Charging: Safe State.';
             end;
-
           end;
-
           CANDischargeID .. CANDischargeID+2 :    //   private void read_disch()
           begin
               row := (id-CANDischargeID)*4;
@@ -986,57 +878,33 @@ begin
                     AccCells[col+(row+j)*12].discharging := true;
                 end;
           end;
-
-          CANCellID .. (CANCellID+(12*3)-1) :
+          CANCellID:// .. (CANCellID+(12*3)-1) :
           begin
-            col := trunc((id-CANCellID)/3);
-            row := trunc((id-CANCellID)mod 3)*4;
-
-            AccCells[col+row*12].Voltage := Get16BitBE(msg,0)/10000;;
-            AccCells[col+row*12].received := true;
-            AccCells[col+(row+1)*12].Voltage := Get16BitBE(msg,2)/10000;
-            AccCells[col+(row+1)*12].received := true;
-            AccCells[col+(row+2)*12].Voltage := Get16BitBE(msg,4)/10000;
-            AccCells[col+(row+2)*12].received := true;
-            AccCells[col+(row+3)*12].Voltage := Get16BitBE(msg,6)/10000;
-            AccCells[col+(row+3)*12].received := true;
+            col := msg[7];
+            row := msg[6];
+            AccCells[col+row*18].Voltage := Get16BitBE(msg,0)/10000;;
+            AccCells[col+row*18].received := true;
+            AccCells[col+1+row*18].Voltage := Get16BitBE(msg,2)/10000;
+            AccCells[col+1+row*18].received := true;
+            AccCells[col+2+row*18].Voltage := Get16BitBE(msg,4)/10000;
+            AccCells[col+2+row*18].received := true;
           end;
-
-          CANTempID .. ( CANTempID+(12*2)-1 ) :
-                 {
-  for id := CANTempID to CANTempID+(12*2)-1 do
-  begin
-    col := trunc((id-CANTempID) / 2 ); //  set starting cell to work down from
-    row := ((id-CANTempID) mod 2 )*4; // correct
-
-
-    Temps[col + row*12].Temperature := -5 + Random*55;
-    Temps[col + row*12].received := true;
-    if row < 4 then
-    begin
-      Temps[col + (row+1)*12].Temperature := -5 + Random*55;
-      Temps[col + (row+1)*12].received := true;
-      Temps[col + (row+2)*12].Temperature := -5 + Random*55;
-      Temps[col + (row+2)*12].received := true;
-      Temps[col + (row+3)*12].Temperature := -5 + Random*55;
-      Temps[col + (row+3)*12].received := true;
-    end;
-  end;}
+          CANTempID .. CANTempID+2:// .. ( CANTempID+(16*2)-1 ) : //023
               begin
-     {?}        col := trunc((id-CANTempID) / 2 ); //  set starting cell to work down from
-                row := ((id-CANTempID) mod 2 )*4;
+                col := msg[7];
+                row := msg[6];
 
-                Temps[col + row*12].Temperature :=Get16BitBE(msg,0) /100;
-                Temps[col + row*12].received := true;
-                if row < 4 then
-                begin
-                  Temps[col + (row+1)*12].Temperature := (Get16BitBE(msg,2))/100;
-                  Temps[col + (row+1)*12].received := true;
-                  Temps[col + (row+2)*12].Temperature := (Get16BitBE(msg,4))/100;
-                  Temps[col + (row+2)*12].received := true;
-                  Temps[col + (row+3)*12].Temperature := (Get16BitBE(msg,6))/100;
-                  Temps[col + (row+3)*12].received := true;
-                end;
+                if col = 1 then
+                  col := 3;
+                if col = 2 then
+                  col := 6;
+
+                Temps[col + row*8].Temperature := (Get16BitBE(msg,0))/100;
+                Temps[col + row*8].received := true;
+                Temps[col + 1 + row*8].Temperature := (Get16BitBE(msg,2))/100;
+                Temps[col + 1 + row*8].received := true;
+                Temps[col + 2 + row*8].Temperature := (Get16BitBE(msg,4))/100;
+                Temps[col + 2 + row*8].received := true;
               end;
 
           CANBMSErrorStateID :
@@ -1047,20 +915,16 @@ begin
                 WDRF.Checked :=  IsBitSet(msg[0], 3);
                 JTRF.Checked :=  IsBitSet(msg[0], 4);
               end;
-
         end;
-
 
       end;
     end;
   end;
 end;
 
-
-
 procedure TBMSMonForm.Update;
 var
-  i,j, cell, count : integer;
+  i, row,col, cell, count : integer;
   ready : Boolean;
   SOCval, v, t : real;
 begin
@@ -1072,22 +936,19 @@ begin
       timeout := true;
     end
     else timeout := false;
-
-  for i := 0 to 11 do     // this is failing too frequently. examine.
-    for j := 0 to 11 do
-      if not AccCells[i*12+j].received then
+  for row := 0 to 7 do     // this is failing too frequently. examine.
+    for col := 0 to 18 do
+      if not AccCells[row*18+col].received then
       begin
         ready := false;
         count := count +1;
       end;
-
 
  // if ready then      // received all ready, ready to update grid.
   begin
 //    statusmsg.Lines.Add('readycount:' + inttostr(count));
     AccCellsDisplay := AccCells;
     TempsDisplay := Temps;
-
     for i := 0 to CellCount-1 do
     begin
       AccCells[i].received := false;
@@ -1095,18 +956,16 @@ begin
     end;
     for i := 0 to TempCount-1 do
       Temps[i].received := false;
-    for i := 0 to TempCount-1 do
+    //for i := 0 to TempCount-1 do
 
-
-    minv := AccCellsDisplay[0].voltage;
-    maxv := minv;
-
-    for i := 0 to 11 do
-      for j := 0 to 11 do
+    minv := 200;
+    maxv := 0;
+    for row := 0 to 7 do
+      for col := 0 to 18 do
       begin
-        cell := i*12+j;
+        cell := row*18+col;
         v := AccCellsDisplay[cell].Voltage;
-        VoltageGrid.Cells[j+1,i+1] := floattostrf(v,ffFixed,4,4);
+        VoltageGrid.Cells[col+1,row+1] := floattostrf(v,ffFixed,4,4);
         if v >= maxV then
         begin
           maxV := v;
@@ -1117,7 +976,7 @@ begin
         end;
         socval := socval + v;
       end;
-
+      {
     for i := 0 to CellCount-1 do
     begin
       if AccCellsDisplay[i].Voltage >= maxV then
@@ -1129,25 +988,22 @@ begin
       else
         AccCellsDisplay[i].min := false;
     end;
-
+    }
 //    statusmsg.Lines.Add('received count :'+inttostr(count));
-
     AvgV.Caption := floattostrf(socval / CellCount,ffFixed,4,4);
     DeltaV.Caption := floattostrf(maxV - minV, ffFixed,4,4);
     HighestCell.Caption := floattostrf(maxV, ffFixed,4,4);
     LowestCell.Caption := floattostrf(minV, ffFixed,4,4);
     SOC.Caption := floattostrf(socval, ffFixed,4,4);
-
-    mint := Temps[0].Temperature;
-    maxt := mint;
+    mint := 200;
+    maxt := -200;
     socval := 0;
-
-    for i := 0 to 4 do
-      for j := 0 to 11 do
+    for row := 0 to 7 do
+      for col := 0 to 8 do
       begin
-   //     t := TempsDisplay[i*5+j].Temperature;
-        t := TempsDisplay[i*12+j].Temperature;
-        TemperatureGrid.Cells[j+1,i+1] := floattostrf(t,ffFixed,4,2);
+        cell := row*9+col;
+        t := TempsDisplay[cell].Temperature;
+        TemperatureGrid.Cells[col+1,row+1] := floattostrf(t,ffFixed,4,2);
         if t >= maxT then
         begin
           maxt := t;
@@ -1158,7 +1014,6 @@ begin
         end;
         socval := socval + t;
       end;
-
     for i := 0 to tempcount-1 do
     begin
       if TempsDisplay[i].Temperature >= maxT then
@@ -1169,16 +1024,12 @@ begin
         TempsDisplay[i].min := true
       else
         TempsDisplay[i].min := false;
-
     end;
 
-
     socval := socval / 60;
-
     HighestNTC.Caption := floattostrf((maxT), ffFixed,4,2);
     LowestNTC.Caption := floattostrf((minT), ffFixed,4,2);
     AvgTemp.Caption := floattostrf((socval), ffFixed,4,2);
-
     if PECVal > 0 then
     begin
       PEC.Caption := IntToStr(PECVal);
@@ -1186,11 +1037,8 @@ begin
     end;
     Power.Caption := IntToStr(PowerVal);
     Current.Caption := floattostrf(CurrentVal / 1000, ffFixed, 4,3);
-
   //  ChargeCurrent.Caption := floattostrf(ChargeCurrentVal, ffFixed, 6,3);
   //  ChargeVoltage.Caption := floattostrf(ChargeVoltageVal, ffFixed, 6,3);
   end;
-
 end;
-
 end.

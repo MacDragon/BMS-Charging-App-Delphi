@@ -103,10 +103,11 @@ object BMSMonForm: TBMSMonForm
     Left = 8
     Top = 62
     Width = 850
-    Height = 337
-    ColCount = 13
+    Height = 235
+    ColCount = 19
+    DefaultColWidth = 43
     Enabled = False
-    RowCount = 13
+    RowCount = 9
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clDefault
     Font.Height = -11
@@ -118,13 +119,14 @@ object BMSMonForm: TBMSMonForm
     OnDrawCell = VoltageGridDrawCell
   end
   object TemperatureGrid: TStringGrid
-    Left = 9
-    Top = 424
+    Left = 8
+    Top = 303
     Width = 849
-    Height = 154
-    ColCount = 13
+    Height = 233
+    ColCount = 10
+    DefaultColWidth = 86
     Enabled = False
-    RowCount = 6
+    RowCount = 9
     ScrollBars = ssNone
     TabOrder = 1
     OnDrawCell = TemperatureGridDrawCell
