@@ -815,6 +815,7 @@ begin
         for i := 0 to 7 do
         msgout[i] := 0;
         case id of
+        {
           1 :
           begin
             StatusMsg.Lines.add('test');
@@ -851,7 +852,7 @@ begin
             ChargeCurrent.Caption := IntToStr(Get16BitBE(msg,6) div 100);
             //Added output voltage actual to this function. Function name misleading
             ChargeVoltage.Caption := IntToStr(Get16BitBE(msg,4) div 5);
-          end;
+          end;        }
 
           CANBMSStatusIDNew :  //    private void read_time()
           begin
@@ -859,7 +860,7 @@ begin
       //      hour = IntToStr(Get32BitBE(msg,0));    // why sending twice?
       //      minute = IntToStr(Get32BitBE(msg,4));
           end;
-
+               {
           CANBMSStatusID :  //    private void read_time()
           begin
       //      hour = IntToStr(Get32BitBE(msg,0));    // why sending twice?
@@ -928,7 +929,7 @@ begin
                   if IsBitSet(Get16BitBE(msg,j*2),i) then
                     AccCells[col+(row+j)*12].discharging := true;
                 end;
-          end;
+          end;    }
           CANCellID:// .. (CANCellID+(12*3)-1) :
           begin
             col := msg[7];
@@ -940,7 +941,7 @@ begin
             AccCells[col+2+row*18].Voltage := Get16BitLE(msg,4)/10000;
             AccCells[col+2+row*18].received := true;
           end;
-          CANTempID .. CANTempID+2:// .. ( CANTempID+(16*2)-1 ) : //023
+          CANTempID:// .. ( CANTempID+(16*2)-1 ) : //023
           begin
             col := msg[7];
             row := msg[6];
@@ -957,7 +958,7 @@ begin
             Temps[col + 2 + row*9].Temperature := (Get16BitLE(msg,4));
             Temps[col + 2 + row*9].received := true;
           end;
-
+                 {
           CANBMSErrorStateID :
               begin
                 PORF.Checked :=  IsBitSet(msg[0], 0);
@@ -966,6 +967,7 @@ begin
                 WDRF.Checked :=  IsBitSet(msg[0], 3);
                 JTRF.Checked :=  IsBitSet(msg[0], 4);
               end;
+              }
         end;
 
       end;
@@ -986,7 +988,13 @@ begin
       Status.Caption := 'Timeout for ' + inttostr(secondsBetween(LastSeen,Now))+' seconds';
       timeout := true;
     end
-    else timeout := false;
+    else
+    begin
+      Status.Caption := 'Online';
+      timeout := false;
+    end;
+
+
   for row := 0 to 7 do     // this is failing too frequently. examine.
     for col := 0 to 18 do
       if not AccCells[row*18+col].received then
@@ -1012,7 +1020,7 @@ begin
     minv := 200;
     maxv := 0;
     for row := 0 to 7 do
-      for col := 0 to 18 do
+      for col := 0 to 17 do
       begin
         cell := row*18+col;
         v := AccCellsDisplay[cell].Voltage;
@@ -1021,12 +1029,13 @@ begin
         begin
           maxV := v;
         end;
-        if v <= minV then
+        if (v <= minV) and (v > 0) then
         begin
-          minV := v;
+          minV := v;          
         end;
         socval := socval + v;
       end;
+
     for i := 0 to CellCount-1 do
     begin
       if AccCellsDisplay[i].Voltage >= maxV then
@@ -1075,7 +1084,7 @@ begin
         TempsDisplay[i].min := false;
     end;
 
-    socval := socval / 60;
+    socval := socval / 72;
     HighestNTC.Caption := floattostrf((maxT), ffFixed,4,2);
     LowestNTC.Caption := floattostrf((minT), ffFixed,4,2);
     AvgTemp.Caption := floattostrf((socval), ffFixed,4,2);
