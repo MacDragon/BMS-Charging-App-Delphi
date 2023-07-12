@@ -950,12 +950,12 @@ begin
             if col = 2 then
               col := 6;
 
-            Temps[col + row*8].Temperature := (Get16BitLE(msg,0))/100;
-            Temps[col + row*8].received := true;
-            Temps[col + 1 + row*8].Temperature := (Get16BitLE(msg,2))/100;
-            Temps[col + 1 + row*8].received := true;
-            Temps[col + 2 + row*8].Temperature := (Get16BitLE(msg,4))/100;
-            Temps[col + 2 + row*8].received := true;
+            Temps[col + row*9].Temperature := (Get16BitLE(msg,0));
+            Temps[col + row*9].received := true;
+            Temps[col + 1 + row*9].Temperature := (Get16BitLE(msg,2));
+            Temps[col + 1 + row*9].received := true;
+            Temps[col + 2 + row*9].Temperature := (Get16BitLE(msg,4));
+            Temps[col + 2 + row*9].received := true;
           end;
 
           CANBMSErrorStateID :
@@ -1027,7 +1027,6 @@ begin
         end;
         socval := socval + v;
       end;
-      {
     for i := 0 to CellCount-1 do
     begin
       if AccCellsDisplay[i].Voltage >= maxV then
@@ -1039,7 +1038,6 @@ begin
       else
         AccCellsDisplay[i].min := false;
     end;
-    }
 //    statusmsg.Lines.Add('received count :'+inttostr(count));
     AvgV.Caption := floattostrf(socval / CellCount,ffFixed,4,4);
     DeltaV.Caption := floattostrf(maxV - minV, ffFixed,4,4);
