@@ -194,6 +194,15 @@ begin
    result := msg[start] shl 8 + msg[start+1];
 end;
 
+function Get32BitLE(var msg: array of byte; start : byte ) : Long;
+begin
+   result := msg[start+3] shl 24 + msg[start+2] shl 16 + msg[start+1] shl 8 + msg[start];
+end;
+function Get16BitLE(var msg: array of byte; start : byte ) : Long;
+begin
+   result := msg[start+1] shl 8 + msg[start];
+end;
+
 procedure TBMSMonForm.CanDropped;
 begin
   with CanChannel1 do
@@ -924,30 +933,30 @@ begin
           begin
             col := msg[7];
             row := msg[6];
-            AccCells[col+row*18].Voltage := Get16BitBE(msg,0)/10000;;
+            AccCells[col+row*18].Voltage := Get16BitLE(msg,0)/10000;;
             AccCells[col+row*18].received := true;
-            AccCells[col+1+row*18].Voltage := Get16BitBE(msg,2)/10000;
+            AccCells[col+1+row*18].Voltage := Get16BitLE(msg,2)/10000;
             AccCells[col+1+row*18].received := true;
-            AccCells[col+2+row*18].Voltage := Get16BitBE(msg,4)/10000;
+            AccCells[col+2+row*18].Voltage := Get16BitLE(msg,4)/10000;
             AccCells[col+2+row*18].received := true;
           end;
           CANTempID .. CANTempID+2:// .. ( CANTempID+(16*2)-1 ) : //023
-              begin
-                col := msg[7];
-                row := msg[6];
+          begin
+            col := msg[7];
+            row := msg[6];
 
-                if col = 1 then
-                  col := 3;
-                if col = 2 then
-                  col := 6;
+            if col = 1 then
+              col := 3;
+            if col = 2 then
+              col := 6;
 
-                Temps[col + row*8].Temperature := (Get16BitBE(msg,0))/100;
-                Temps[col + row*8].received := true;
-                Temps[col + 1 + row*8].Temperature := (Get16BitBE(msg,2))/100;
-                Temps[col + 1 + row*8].received := true;
-                Temps[col + 2 + row*8].Temperature := (Get16BitBE(msg,4))/100;
-                Temps[col + 2 + row*8].received := true;
-              end;
+            Temps[col + row*8].Temperature := (Get16BitLE(msg,0))/100;
+            Temps[col + row*8].received := true;
+            Temps[col + 1 + row*8].Temperature := (Get16BitLE(msg,2))/100;
+            Temps[col + 1 + row*8].received := true;
+            Temps[col + 2 + row*8].Temperature := (Get16BitLE(msg,4))/100;
+            Temps[col + 2 + row*8].received := true;
+          end;
 
           CANBMSErrorStateID :
               begin
