@@ -65,6 +65,7 @@ object BMSMonForm: TBMSMonForm
     Width = 51
     Height = 13
     Caption = 'Fan Speed'
+    Visible = False
   end
   object ChargingCurrentLabel: TLabel
     Left = 106
@@ -72,6 +73,7 @@ object BMSMonForm: TBMSMonForm
     Width = 55
     Height = 13
     Caption = 'Charge Cur'
+    Visible = False
   end
   object StatusLabel: TLabel
     Left = 384
@@ -167,6 +169,7 @@ object BMSMonForm: TBMSMonForm
         ' + delta'#39
       'Discharge all cells to 3.8V for storage ( Atmel currently )')
     TabOrder = 4
+    Visible = False
     OnClick = BalancingModeClick
   end
   object Charge: TButton
@@ -177,6 +180,7 @@ object BMSMonForm: TBMSMonForm
     Caption = 'Charge'
     Enabled = False
     TabOrder = 5
+    Visible = False
     OnClick = ChargeClick
   end
   object LoggingEnabled: TCheckBox
@@ -545,6 +549,7 @@ object BMSMonForm: TBMSMonForm
     Max = 128
     PageSize = 0
     TabOrder = 13
+    Visible = False
     OnChange = FanSpeedSliderChange
   end
   object FanSpeedEdit: TEdit
@@ -555,6 +560,7 @@ object BMSMonForm: TBMSMonForm
     NumbersOnly = True
     TabOrder = 14
     Text = '0'
+    Visible = False
     OnChange = FanSpeedEditChange
   end
   object ChargeCurrentSlider: TScrollBar
@@ -565,6 +571,7 @@ object BMSMonForm: TBMSMonForm
     Max = 60
     PageSize = 0
     TabOrder = 15
+    Visible = False
     OnChange = ChargeCurrentSliderChange
   end
   object ChargeCurrentEdit: TEdit
@@ -575,6 +582,7 @@ object BMSMonForm: TBMSMonForm
     NumbersOnly = True
     TabOrder = 16
     Text = '0'
+    Visible = False
     OnChange = ChargeCurrentEditChange
   end
   object RandomFill: TButton
@@ -594,7 +602,16 @@ object BMSMonForm: TBMSMonForm
     Caption = 'Stop'
     Enabled = False
     TabOrder = 18
+    Visible = False
     OnClick = StopButtonClick
+  end
+  object RequestV: TButton
+    Left = 8
+    Top = 735
+    Width = 75
+    Height = 25
+    Caption = 'RequestV'
+    TabOrder = 19
   end
   object Timer1: TTimer
     Enabled = False

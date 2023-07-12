@@ -101,6 +101,7 @@ type
     StopButton: TButton;
     StatusLabel: TLabel;
     Status: TLabel;
+    RequestV: TButton;
     procedure VoltageGridDrawCell(Sender: TObject; ACol, ARow: Integer;
       Rect: TRect; State: TGridDrawState);
     procedure FormCreate(Sender: TObject);
@@ -164,6 +165,8 @@ const
   maxvoltage = 4.2;
   minvoltage = 3.0;
   CANPowerID = 15;
+  CANBMSStatusIDNew = 151;
+  CANCommandIDNew = 150;
   CANBMSStatusID = 7;
   CANIVTID = $521;
   CANIID =  $611;
@@ -229,6 +232,8 @@ procedure TBMSMonForm.CanDevicesChange(Sender: TObject);
 begin
    CanChannel1.Channel := CanDevices.ItemIndex;
 end;
+
+(*
 procedure TBMSMonForm.SendCommand;
 var
   msg: array[0..7] of byte;
@@ -309,6 +314,35 @@ begin
     end;
   end;
 end;
+*)
+
+procedure TBMSMonForm.SendCommand;
+var
+  msg: array[0..7] of byte;
+begin
+  with CanChannel1 do // send our 'fake' adc data from form input.
+  begin
+    if Active then
+    begin
+      try
+        msg[0] := 1; // upper byte. Delta value. 100 default.
+        msg[1] := 0;
+        msg[2] := 0;      // padding.
+        msg[3] := 0;
+        msg[4] := 0;
+        msg[5] := 0;
+        msg[6] := 0;
+        msg[7] := 0;
+        Check(Write(CANCommandIDNew,msg,8,0), 'Write failed');
+        StatusMsg.Lines.Add('CanMsgSend voltage status request');
+      Except
+        StatusMsg.Lines.Add('Error sending can message, dropping can.');
+        CanDropped;
+      end;
+    end;
+  end;
+end;
+
 procedure TBMSMonForm.ChargeClick(Sender: TObject);
 begin
   if CanChannel1.Active then
@@ -809,6 +843,14 @@ begin
             //Added output voltage actual to this function. Function name misleading
             ChargeVoltage.Caption := IntToStr(Get16BitBE(msg,4) div 5);
           end;
+
+          CANBMSStatusIDNew :  //    private void read_time()
+          begin
+              lastseen := SysUtils.Now;
+      //      hour = IntToStr(Get32BitBE(msg,0));    // why sending twice?
+      //      minute = IntToStr(Get32BitBE(msg,4));
+          end;
+
           CANBMSStatusID :  //    private void read_time()
           begin
       //      hour = IntToStr(Get32BitBE(msg,0));    // why sending twice?
@@ -930,7 +972,7 @@ var
 begin
   ready := true;
   if CanChannel1.Active then
-    if secondsBetween(Now,LastSeen) > 0 then
+    if secondsBetween(Now,lastseen) > 0 then
     begin
       Status.Caption := 'Timeout for ' + inttostr(secondsBetween(LastSeen,Now))+' seconds';
       timeout := true;
