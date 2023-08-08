@@ -754,16 +754,16 @@ begin
           temp := TempsDisplay[cell].Temperature;
           if ( temp > mintemp ) and ( temp < lowtemp ) then
             temp := lowtemp;
-          Canvas.Brush.Color := RGBColour(temp, lowtemp, maxtemp, true);
+          //Canvas.Brush.Color := RGBColour(temp, lowtemp, maxtemp, true);
         end
         else
           Canvas.Brush.Color := $FFFFFF;
     //    Canvas.Brush.Color := ERRLowRGB;
         Canvas.FillRect(Rect);
-        if TempsDisplay[cell].max then
+        {if TempsDisplay[cell].max then
           Canvas.Font.Style := [fsBold];
         if TempsDisplay[cell].min then
-          Canvas.Font.Style := [fsBold, fsItalic];
+          Canvas.Font.Style := [fsBold, fsItalic];}
         Canvas.TextOut(Rect.Left+2,Rect.Top+8,Cells[ACol, ARow]);
     end
     else
