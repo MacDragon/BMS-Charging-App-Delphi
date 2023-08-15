@@ -102,6 +102,10 @@ type
     StatusLabel: TLabel;
     Status: TLabel;
     RequestV: TButton;
+    Label1: TLabel;
+    Label2: TLabel;
+    u1: TLabel;
+    U2: TLabel;
     procedure VoltageGridDrawCell(Sender: TObject; ACol, ARow: Integer;
       Rect: TRect; State: TGridDrawState);
     procedure FormCreate(Sender: TObject);
@@ -132,7 +136,7 @@ type
     Temps, TempsDisplay : array[0..71] of Temp; //023
     PowerVal, PECVal, PECAvgVal : Integer;
     maxV, minV, maxT, minT : Real;
-    CurrentVal, ChargeCurrentVal,ChargeVoltageVal : Real;
+    CurrentVal, ChargeCurrentVal,ChargeVoltageVal, U1Val, U2Val : Real;
     procedure CanChannel1CanRx(Sender: TObject);
     procedure Update;
     procedure SendCommand;
@@ -837,10 +841,6 @@ begin
             PowerVal := Get32BitBE(msg,0);
           //  CurrentVal := (Int16)((rxData[4] << 8) | (rxData[5] << 0));
           end;
-          CANIVTID :  // current from ivt
-          begin
-            CurrentVal := Get32BitBE(msg,2);// / 1000;
-          end;
           CANIID : //   read_curr_real()
           begin
             ChargeCurrent.Caption := IntToStr(Get16BitBE(msg,6) div 100);
@@ -853,6 +853,21 @@ begin
             //Added output voltage actual to this function. Function name misleading
             ChargeVoltage.Caption := IntToStr(Get16BitBE(msg,4) div 5);
           end;        }
+
+          CANIVTID :  // current from ivt
+          begin
+            CurrentVal := Get32BitBE(msg,2);// / 1000;
+          end;
+
+          CANIVTID + 1 : // u1
+          begin
+            U1Val :=  Get32BitBE(msg,2);
+          end;
+
+          CANIVTID + 2 : // u2
+          begin
+            U2Val :=  Get32BitBE(msg,2);
+          end;
 
           CANBMSStatusIDNew :  //    private void read_time()
           begin
@@ -1095,6 +1110,8 @@ begin
     end;
     Power.Caption := IntToStr(PowerVal);
     Current.Caption := floattostrf(CurrentVal / 1000, ffFixed, 4,3);
+    U1.Caption := floattostrf(U1Val / 1000, ffFixed, 4,3);
+    U2.Caption := floattostrf(U2Val / 1000, ffFixed, 4,3);
   //  ChargeCurrent.Caption := floattostrf(ChargeCurrentVal, ffFixed, 6,3);
   //  ChargeVoltage.Caption := floattostrf(ChargeVoltageVal, ffFixed, 6,3);
   end;

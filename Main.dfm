@@ -47,14 +47,14 @@ object BMSMonForm: TBMSMonForm
   end
   object SafeStateReasonLabel: TLabel
     Left = 864
-    Top = 544
+    Top = 576
     Width = 109
     Height = 13
     Caption = 'SafeStateReasonLabel'
   end
   object SafeStateReason: TLabel
-    Left = 979
-    Top = 544
+    Left = 980
+    Top = 576
     Width = 84
     Height = 13
     Caption = 'SafeStateReason'
@@ -327,7 +327,7 @@ object BMSMonForm: TBMSMonForm
     Left = 864
     Top = 286
     Width = 161
-    Height = 227
+    Height = 259
     Caption = 'Charging'
     TabOrder = 9
     object PowerLabel: TLabel
@@ -470,6 +470,34 @@ object BMSMonForm: TBMSMonForm
       Height = 13
       Caption = '-'
     end
+    object Label1: TLabel
+      Left = 18
+      Top = 214
+      Width = 31
+      Height = 13
+      Caption = 'IVT u1'
+    end
+    object Label2: TLabel
+      Left = 18
+      Top = 233
+      Width = 31
+      Height = 13
+      Caption = 'IVT u2'
+    end
+    object u1: TLabel
+      Left = 106
+      Top = 214
+      Width = 15
+      Height = 13
+      Caption = '-'
+    end
+    object U2: TLabel
+      Left = 106
+      Top = 233
+      Width = 23
+      Height = 13
+      Caption = '-'
+    end
   end
   object StatusMsg: TMemo
     Left = 687
@@ -534,7 +562,7 @@ object BMSMonForm: TBMSMonForm
   end
   object SafeState: TCheckBox
     Left = 864
-    Top = 519
+    Top = 551
     Width = 97
     Height = 17
     Caption = 'SafeState'
