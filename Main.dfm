@@ -487,14 +487,14 @@ object BMSMonForm: TBMSMonForm
     object u1: TLabel
       Left = 106
       Top = 214
-      Width = 15
+      Width = 4
       Height = 13
       Caption = '-'
     end
     object U2: TLabel
       Left = 106
       Top = 233
-      Width = 23
+      Width = 4
       Height = 13
       Caption = '-'
     end
